@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Green Ball Runner</title>
     <style>
         body {
@@ -16,25 +16,33 @@
             height: 100vh;
             margin: 0;
             overflow: hidden;
+            /* Prevents phone screen bouncing/scrolling */
+            touch-action: none; 
         }
         h1 {
             margin-bottom: 5px;
+            font-size: 20px;
             text-shadow: 0 0 10px rgba(0, 255, 102, 0.4);
+            text-align: center;
         }
         #score-board {
-            font-size: 22px;
-            margin-bottom: 15px;
+            font-size: 18px;
+            margin-bottom: 10px;
             font-weight: bold;
         }
         canvas {
-            border: 4px solid #00ff66;
+            border: 3px solid #00ff66;
             background-color: #112a22;
-            box-shadow: 0 0 25px rgba(0, 255, 102, 0.2);
+            box-shadow: 0 0 20px rgba(0, 255, 102, 0.2);
+            max-width: 100%;
+            height: auto;
         }
         .instructions {
-            margin-top: 15px;
-            font-size: 14px;
+            margin-top: 10px;
+            font-size: 12px;
             color: #79ac8e;
+            text-align: center;
+            padding: 0 10px;
         }
     </style>
 </head>
@@ -45,7 +53,7 @@
     
     <canvas id="gameCanvas" width="800" height="300"></canvas>
     
-    <div class="instructions">Press <strong>Spacebar</strong> or <strong>Up Arrow</strong> to Jump over obstacles</div>
+    <div class="instructions"><strong>Tap screen</strong> or press <strong>Spacebar</strong> to Jump</div>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
@@ -72,17 +80,33 @@
         let obstacleTimer = 0;
         let nextObstacleTime = 100;
 
-        // Listen for jump controls
+        // Jump action handler (used for both keyboard and mobile tap)
+        function triggerJump() {
+            if (isGameOver) {
+                resetGame();
+            } else if (ball.grounded) {
+                ball.dy = ball.jumpStrength;
+                ball.grounded = false;
+            }
+        }
+
+        // Listen for keyboard controls (Desktop)
         document.addEventListener("keydown", function(e) {
             if ((e.code === "Space" || e.code === "ArrowUp")) {
-                if (isGameOver) {
-                    resetGame();
-                } else if (ball.grounded) {
-                    ball.dy = ball.jumpStrength;
-                    ball.grounded = false;
-                }
+                triggerJump();
                 e.preventDefault(); // Prevent page scrolling on spacebar
             }
+        });
+
+        // Listen for touch/click controls (Mobile & Tablet)
+        window.addEventListener("touchstart", function(e) {
+            triggerJump();
+            e.preventDefault();
+        }, { passive: false });
+
+        window.addEventListener("click", function(e) {
+            // Avoid double triggering if it was a touch event on some browsers
+            if (e.pointerType === "touch") return;
         });
 
         // Main Game Loop
@@ -117,7 +141,7 @@
             ctx.beginPath();
             ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
             ctx.fill();
-            // Add a glowing core to the ball
+            // Glowing core
             ctx.fillStyle = "#ffffff";
             ctx.beginPath();
             ctx.arc(ball.x - 4, ball.y - 4, 4, 0, Math.PI * 2);
@@ -128,7 +152,6 @@
             if (obstacleTimer >= nextObstacleTime) {
                 spawnObstacle();
                 obstacleTimer = 0;
-                // Randomize time between obstacles to keep it unpredictable
                 nextObstacleTime = Math.floor(Math.random() * 50) + 70;
             }
 
@@ -137,11 +160,11 @@
                 let obs = obstacles[i];
                 obs.x -= gameSpeed;
 
-                // Draw obstacle (retro green blocks/spikes)
+                // Draw obstacle
                 ctx.fillStyle = "#33cc66";
                 ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
 
-                // Collision detection (Circle to Box collision)
+                // Collision detection
                 if (
                     ball.x + ball.radius > obs.x &&
                     ball.x - ball.radius < obs.x + obs.width &&
@@ -150,13 +173,12 @@
                     isGameOver = true;
                 }
 
-                // Remove obstacles that go off-screen and increase score
+                // Remove off-screen obstacles and increase score
                 if (obs.x + obs.width < 0) {
                     obstacles.splice(i, 1);
                     score += 10;
                     document.getElementById("score").innerText = score;
 
-                    // Gradually speed up game over time
                     if (score % 50 === 0) {
                         gameSpeed += 0.5;
                     }
@@ -169,21 +191,21 @@
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
                 ctx.fillStyle = "#00ff66";
-                ctx.font = "bold 30px 'Courier New'";
+                ctx.font = "bold 26px 'Courier New'";
                 ctx.textAlign = "center";
                 ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 15);
 
-                ctx.font = "16px 'Courier New'";
+                ctx.font = "14px 'Courier New'";
                 ctx.fillStyle = "#ffffff";
-                ctx.fillText("Press Spacebar to Restart", canvas.width / 2, canvas.height / 2 + 20);
-                ctx.textAlign = "left"; // Reset alignment
+                ctx.fillText("Tap or Press Space to Restart", canvas.width / 2, canvas.height / 2 + 20);
+                ctx.textAlign = "left"; 
             }
 
             requestAnimationFrame(update);
         }
 
         function spawnObstacle() {
-            const height = Math.floor(Math.random() * 25) + 25; // Random heights
+            const height = Math.floor(Math.random() * 25) + 25;
             const width = 20;
             obstacles.push({
                 x: canvas.width,
@@ -207,7 +229,7 @@
             update();
         }
 
-        // Start the game loop
+        // Start game loop
         update();
     </script>
 </body>
