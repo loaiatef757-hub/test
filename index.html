@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retro Snake Game</title>
+    <title>Green Ball Runner</title>
     <style>
         body {
-            background-color: #121212;
-            color: #ffffff;
+            background-color: #0d1b1e;
+            color: #00ff66;
             font-family: 'Courier New', Courier, monospace;
             display: flex;
             flex-direction: column;
@@ -15,172 +15,200 @@
             justify-content: center;
             height: 100vh;
             margin: 0;
+            overflow: hidden;
         }
         h1 {
             margin-bottom: 5px;
-            color: #00ff66;
             text-shadow: 0 0 10px rgba(0, 255, 102, 0.4);
         }
         #score-board {
-            font-size: 20px;
+            font-size: 22px;
             margin-bottom: 15px;
+            font-weight: bold;
         }
         canvas {
-            border: 4px solid #333;
-            background-color: #1a1a1a;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            border: 4px solid #00ff66;
+            background-color: #112a22;
+            box-shadow: 0 0 25px rgba(0, 255, 102, 0.2);
         }
         .instructions {
             margin-top: 15px;
             font-size: 14px;
-            color: #888;
+            color: #79ac8e;
         }
     </style>
 </head>
 <body>
 
-    <h1>SNAKE GAME</h1>
+    <h1>GREEN BALL RUNNER</h1>
     <div id="score-board">Score: <span id="score">0</span></div>
     
-    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <canvas id="gameCanvas" width="800" height="300"></canvas>
     
-    <div class="instructions">Use Arrow Keys to Move</div>
+    <div class="instructions">Press <strong>Spacebar</strong> or <strong>Up Arrow</strong> to Jump over obstacles</div>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        const gridSize = 20;
-        const tileCount = canvas.width / gridSize;
-
-        let snake = [
-            { x: 10, y: 10 },
-            { x: 9, y: 10 },
-            { x: 8, y: 10 }
-        ];
-        let food = { x: 5, y: 5 };
-        let dx = 1;
-        let dy = 0;
+        // Game variables
         let score = 0;
-        let changingDirection = false; // Prevents fast double-click self-collision bugs
+        let gameSpeed = 6;
+        let isGameOver = false;
 
-        // Listen for keyboard directions
-        document.addEventListener("keydown", changeDirection);
+        // Player (The Ball)
+        const ball = {
+            x: 80,
+            y: 220,
+            radius: 18,
+            dy: 0,
+            jumpStrength: -11,
+            gravity: 0.6,
+            grounded: true
+        };
 
-        function main() {
-            if (hasGameEnded()) {
-                alert("Game Over! Final Score: " + score);
-                resetGame();
+        // Obstacles array
+        let obstacles = [];
+        let obstacleTimer = 0;
+        let nextObstacleTime = 100;
+
+        // Listen for jump controls
+        document.addEventListener("keydown", function(e) {
+            if ((e.code === "Space" || e.code === "ArrowUp")) {
+                if (isGameOver) {
+                    resetGame();
+                } else if (ball.grounded) {
+                    ball.dy = ball.jumpStrength;
+                    ball.grounded = false;
+                }
+                e.preventDefault(); // Prevent page scrolling on spacebar
             }
+        });
 
-            changingDirection = false;
-            clearCanvas();
-            drawFood();
-            moveSnake();
-            drawSnake();
-        }
+        // Main Game Loop
+        function update() {
+            if (isGameOver) return;
 
-        // Run the game loop every 100 milliseconds
-        setInterval(main, 100);
-        generateFood();
-
-        function clearCanvas() {
-            ctx.fillStyle = "#1a1a1a";
+            // Clear canvas
+            ctx.fillStyle = "#112a22";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw green ground line
+            ctx.strokeStyle = "#00ff66";
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, 240);
+            ctx.lineTo(canvas.width, 240);
+            ctx.stroke();
+
+            // Ball physics (gravity & jumping)
+            ball.dy += ball.gravity;
+            ball.y += ball.dy;
+
+            // Ground collision
+            if (ball.y > 240 - ball.radius) {
+                ball.y = 240 - ball.radius;
+                ball.dy = 0;
+                ball.grounded = true;
+            }
+
+            // Draw the Ball
+            ctx.fillStyle = "#00ff66";
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+            // Add a glowing core to the ball
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath();
+            ctx.arc(ball.x - 4, ball.y - 4, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Handle obstacle spawning
+            obstacleTimer++;
+            if (obstacleTimer >= nextObstacleTime) {
+                spawnObstacle();
+                obstacleTimer = 0;
+                // Randomize time between obstacles to keep it unpredictable
+                nextObstacleTime = Math.floor(Math.random() * 50) + 70;
+            }
+
+            // Move and draw obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                let obs = obstacles[i];
+                obs.x -= gameSpeed;
+
+                // Draw obstacle (retro green blocks/spikes)
+                ctx.fillStyle = "#33cc66";
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+
+                // Collision detection (Circle to Box collision)
+                if (
+                    ball.x + ball.radius > obs.x &&
+                    ball.x - ball.radius < obs.x + obs.width &&
+                    ball.y + ball.radius > obs.y
+                ) {
+                    isGameOver = true;
+                }
+
+                // Remove obstacles that go off-screen and increase score
+                if (obs.x + obs.width < 0) {
+                    obstacles.splice(i, 1);
+                    score += 10;
+                    document.getElementById("score").innerText = score;
+
+                    // Gradually speed up game over time
+                    if (score % 50 === 0) {
+                        gameSpeed += 0.5;
+                    }
+                }
+            }
+
+            // Draw Game Over Screen
+            if (isGameOver) {
+                ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = "#00ff66";
+                ctx.font = "bold 30px 'Courier New'";
+                ctx.textAlign = "center";
+                ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 15);
+
+                ctx.font = "16px 'Courier New'";
+                ctx.fillStyle = "#ffffff";
+                ctx.fillText("Press Spacebar to Restart", canvas.width / 2, canvas.height / 2 + 20);
+                ctx.textAlign = "left"; // Reset alignment
+            }
+
+            requestAnimationFrame(update);
         }
 
-        function drawSnake() {
-            snake.forEach((part, index) => {
-                ctx.fillStyle = index === 0 ? "#00ff66" : "#00aa44";
-                ctx.fillRect(part.x * gridSize, part.y * gridSize, gridSize - 2, gridSize - 2);
+        function spawnObstacle() {
+            const height = Math.floor(Math.random() * 25) + 25; // Random heights
+            const width = 20;
+            obstacles.push({
+                x: canvas.width,
+                y: 240 - height,
+                width: width,
+                height: height
             });
-        }
-
-        function moveSnake() {
-            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
-            snake.unshift(head);
-
-            if (head.x === food.x && head.y === food.y) {
-                score += 10;
-                document.getElementById("score").innerText = score;
-                generateFood();
-            } else {
-                snake.pop();
-            }
-        }
-
-        function generateFood() {
-            food.x = Math.floor(Math.random() * tileCount);
-            food.y = Math.floor(Math.random() * tileCount);
-
-            // Make sure food doesn't spawn directly on top of the snake
-            snake.forEach(part => {
-                if (part.x === food.x && part.y === food.y) generateFood();
-            });
-        }
-
-        function drawFood() {
-            ctx.fillStyle = "#ff3333";
-            ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize - 2, gridSize - 2);
-        }
-
-        function changeDirection(event) {
-            const keyPressed = event.keyCode;
-            const LEFT = 37;
-            const UP = 38;
-            const RIGHT = 39;
-            const DOWN = 40;
-
-            if (changingDirection) return;
-
-            if (keyPressed === LEFT && dx === 0) {
-                dx = -1; dy = 0;
-                changingDirection = true;
-            }
-            if (keyPressed === UP && dy === 0) {
-                dx = 0; dy = -1;
-                changingDirection = true;
-            }
-            if (keyPressed === RIGHT && dx === 0) {
-                dx = 1; dy = 0;
-                changingDirection = true;
-            }
-            if (keyPressed === DOWN && dy === 0) {
-                dx = 0; dy = 1;
-                changingDirection = true;
-            }
-        }
-
-        function hasGameEnded() {
-            const head = snake[0];
-            
-            // Wall collisions
-            const hitLeftWall = head.x < 0;
-            const hitRightWall = head.x >= tileCount;
-            const hitToptWall = head.y < 0;
-            const hitBottomWall = head.y >= tileCount;
-
-            if (hitLeftWall || hitRightWall || hitToptWall || hitBottomWall) return true;
-
-            // Self collisions
-            for (let i = 4; i < snake.length; i++) {
-                if (snake[i].x === head.x && snake[i].y === head.y) return true;
-            }
-            return false;
         }
 
         function resetGame() {
-            snake = [
-                { x: 10, y: 10 },
-                { x: 9, y: 10 },
-                { x: 8, y: 10 }
-            ];
-            dx = 1;
-            dy = 0;
             score = 0;
+            gameSpeed = 6;
+            obstacles = [];
+            obstacleTimer = 0;
+            nextObstacleTime = 100;
             document.getElementById("score").innerText = score;
-            generateFood();
+            ball.y = 220;
+            ball.dy = 0;
+            ball.grounded = true;
+            isGameOver = false;
+            update();
         }
+
+        // Start the game loop
+        update();
     </script>
 </body>
 </html>
