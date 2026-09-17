@@ -3,8 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>White Ball Runner</title>
+    <title>Ball Runner - Smooth Mobile</title>
     <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
         body {
             background-color: #ffffff;
             color: #222222;
@@ -16,36 +20,33 @@
             min-height: 100vh;
             margin: 0;
             overflow: hidden;
-            touch-action: manipulation;
+            touch-action: none; /* Disables pinch zoom and unwanted scroll lag */
         }
         h1 {
-            margin: 5px 0;
-            font-size: 20px;
+            margin: 0 0 5px 0;
+            font-size: 18px;
             color: #111;
-            text-align: center;
         }
         #score-board {
-            font-size: 16px;
-            margin-bottom: 8px;
+            font-size: 15px;
+            margin-bottom: 6px;
             font-weight: bold;
             color: #444;
         }
         canvas {
-            border: 3px solid #222;
-            background-color: #f7f7f7;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            width: 92vw;
-            max-width: 500px;
+            border: 2px solid #222;
+            background-color: #f9f9f9;
+            width: 90vw;
+            max-width: 420px;
             height: auto;
             display: block;
-            border-radius: 6px;
+            border-radius: 4px;
         }
         .instructions {
-            margin-top: 10px;
-            font-size: 13px;
+            margin-top: 8px;
+            font-size: 12px;
             color: #666;
             text-align: center;
-            padding: 0 10px;
         }
     </style>
 </head>
@@ -54,35 +55,36 @@
     <h1>BALL RUNNER</h1>
     <div id="score-board">Score: <span id="score">0</span></div>
     
-    <canvas id="gameCanvas" width="600" height="250"></canvas>
+    <canvas id="gameCanvas" width="500" height="200"></canvas>
     
     <div class="instructions"><strong>Tap screen</strong> or press <strong>Spacebar</strong> to Jump</div>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
+        const ctx = canvas.getContext("2d", { alpha: false }); // Optimizes canvas rendering performance
 
         let score = 0;
         let gameSpeed = 5;
         let isGameOver = false;
 
-        const groundY = 200;
+        const groundY = 160;
 
         const ball = {
-            x: 60,
-            y: groundY - 15,
-            radius: 15,
+            x: 50,
+            y: groundY - 14,
+            radius: 14,
             dy: 0,
-            jumpStrength: -10,
-            gravity: 0.55,
+            jumpStrength: -9.5,
+            gravity: 0.5,
             grounded: true
         };
 
         let obstacles = [];
         let obstacleTimer = 0;
-        let nextObstacleTime = 130;
+        let nextObstacleTime = 110;
 
-        function triggerJump() {
+        function triggerJump(e) {
+            if (e) e.preventDefault();
             if (isGameOver) {
                 resetGame();
             } else if (ball.grounded) {
@@ -91,38 +93,33 @@
             }
         }
 
+        // Instant response listeners using pointer events for mobile & desktop unity
         window.addEventListener("keydown", function(e) {
             if (e.code === "Space" || e.code === "ArrowUp") {
-                triggerJump();
-                e.preventDefault();
+                triggerJump(e);
             }
         });
 
-        canvas.addEventListener("touchstart", function(e) {
-            triggerJump();
-            e.preventDefault();
+        canvas.addEventListener("pointerdown", function(e) {
+            triggerJump(e);
         }, { passive: false });
-
-        canvas.addEventListener("click", function(e) {
-            triggerJump();
-        });
 
         function update() {
             if (isGameOver) return;
 
-            // Clear canvas with light background
-            ctx.fillStyle = "#f7f7f7";
+            // Clear frame
+            ctx.fillStyle = "#f9f9f9";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw ground line
-            ctx.strokeStyle = "#333333";
-            ctx.lineWidth = 3;
+            // Ground line
+            ctx.strokeStyle = "#222222";
+            ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(0, groundY);
             ctx.lineTo(canvas.width, groundY);
             ctx.stroke();
 
-            // Ball physics
+            // Physics
             ball.dy += ball.gravity;
             ball.y += ball.dy;
 
@@ -132,34 +129,28 @@
                 ball.grounded = true;
             }
 
-            // Draw Ball (Dark grey/black design)
+            // Draw Ball
             ctx.fillStyle = "#222222";
             ctx.beginPath();
             ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
             ctx.fill();
-            
-            // Inner highlight dot on ball
-            ctx.fillStyle = "#ffffff";
-            ctx.beginPath();
-            ctx.arc(ball.x - 3, ball.y - 3, 3, 0, Math.PI * 2);
-            ctx.fill();
 
-            // Obstacles
+            // Obstacles handler
             obstacleTimer++;
             if (obstacleTimer >= nextObstacleTime) {
                 spawnObstacle();
                 obstacleTimer = 0;
-                nextObstacleTime = Math.floor(Math.random() * 50) + 100;
+                nextObstacleTime = Math.floor(Math.random() * 40) + 90;
             }
 
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 let obs = obstacles[i];
                 obs.x -= gameSpeed;
 
-                ctx.fillStyle = "#e74c3c"; // Reddish obstacles for contrast
+                ctx.fillStyle = "#e74c3c";
                 ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
 
-                // Collision detection
+                // Hitbox collision check
                 if (
                     ball.x + ball.radius > obs.x &&
                     ball.x - ball.radius < obs.x + obs.width &&
@@ -172,23 +163,23 @@
                     obstacles.splice(i, 1);
                     score += 10;
                     document.getElementById("score").innerText = score;
-                    if (score % 50 === 0) gameSpeed += 0.4;
+                    if (score % 50 === 0) gameSpeed += 0.3;
                 }
             }
 
-            // Game Over overlay
+            // Game Over Screen
             if (isGameOver) {
-                ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+                ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
                 ctx.fillStyle = "#222222";
-                ctx.font = "bold 24px Arial";
+                ctx.font = "bold 20px Arial";
                 ctx.textAlign = "center";
-                ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 10);
+                ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 8);
 
-                ctx.font = "14px Arial";
+                ctx.font = "13px Arial";
                 ctx.fillStyle = "#666666";
-                ctx.fillText("Tap Anywhere to Restart", canvas.width / 2, canvas.height / 2 + 20);
+                ctx.fillText("Tap to Restart", canvas.width / 2, canvas.height / 2 + 16);
                 ctx.textAlign = "left";
             }
 
@@ -196,8 +187,8 @@
         }
 
         function spawnObstacle() {
-            const height = Math.floor(Math.random() * 20) + 22;
-            const width = 16;
+            const height = Math.floor(Math.random() * 18) + 18;
+            const width = 14;
             obstacles.push({
                 x: canvas.width,
                 y: groundY - height,
@@ -211,7 +202,7 @@
             gameSpeed = 5;
             obstacles = [];
             obstacleTimer = 0;
-            nextObstacleTime = 130;
+            nextObstacleTime = 110;
             document.getElementById("score").innerText = score;
             ball.y = groundY - ball.radius;
             ball.dy = 0;
