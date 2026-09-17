@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ball Runner - Smooth Mobile</title>
+    <title>Ball Runner v1.1</title>
     <style>
         * {
             box-sizing: border-box;
@@ -20,15 +20,15 @@
             min-height: 100vh;
             margin: 0;
             overflow: hidden;
-            touch-action: none; /* Disables pinch zoom and unwanted scroll lag */
+            touch-action: none;
         }
         h1 {
-            margin: 0 0 5px 0;
+            margin: 0 0 4px 0;
             font-size: 18px;
             color: #111;
         }
         #score-board {
-            font-size: 15px;
+            font-size: 14px;
             margin-bottom: 6px;
             font-weight: bold;
             color: #444;
@@ -36,8 +36,8 @@
         canvas {
             border: 2px solid #222;
             background-color: #f9f9f9;
-            width: 90vw;
-            max-width: 420px;
+            width: 92vw;
+            max-width: 450px;
             height: auto;
             display: block;
             border-radius: 4px;
@@ -52,30 +52,31 @@
 </head>
 <body>
 
-    <h1>BALL RUNNER</h1>
-    <div id="score-board">Score: <span id="score">0</span></div>
+    <h1>BALL RUNNER v1.1</h1>
+    <div id="score-board">Score: <span id="score">0</span> &nbsp;|&nbsp; High Score: <span id="highScore">0</span></div>
     
-    <canvas id="gameCanvas" width="500" height="200"></canvas>
+    <canvas id="gameCanvas" width="600" height="220"></canvas>
     
     <div class="instructions"><strong>Tap screen</strong> or press <strong>Spacebar</strong> to Jump</div>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d", { alpha: false }); // Optimizes canvas rendering performance
+        const ctx = canvas.getContext("2d", { alpha: false });
 
         let score = 0;
+        let highScore = 0;
         let gameSpeed = 5;
         let isGameOver = false;
 
-        const groundY = 160;
+        const groundY = 175;
 
         const ball = {
-            x: 50,
-            y: groundY - 14,
-            radius: 14,
+            x: 60,
+            y: groundY - 15,
+            radius: 15,
             dy: 0,
-            jumpStrength: -9.5,
-            gravity: 0.5,
+            jumpStrength: -9.8,
+            gravity: 0.52,
             grounded: true
         };
 
@@ -93,7 +94,7 @@
             }
         }
 
-        // Instant response listeners using pointer events for mobile & desktop unity
+        // Instant response listeners
         window.addEventListener("keydown", function(e) {
             if (e.code === "Space" || e.code === "ArrowUp") {
                 triggerJump(e);
@@ -119,7 +120,7 @@
             ctx.lineTo(canvas.width, groundY);
             ctx.stroke();
 
-            // Physics
+            // Physics loop
             ball.dy += ball.gravity;
             ball.y += ball.dy;
 
@@ -140,7 +141,7 @@
             if (obstacleTimer >= nextObstacleTime) {
                 spawnObstacle();
                 obstacleTimer = 0;
-                nextObstacleTime = Math.floor(Math.random() * 40) + 90;
+                nextObstacleTime = Math.floor(Math.random() * 45) + 95;
             }
 
             for (let i = obstacles.length - 1; i >= 0; i--) {
@@ -157,29 +158,37 @@
                     ball.y + ball.radius > obs.y
                 ) {
                     isGameOver = true;
+                    if (score > highScore) {
+                        highScore = score;
+                        document.getElementById("highScore").innerText = highScore;
+                    }
                 }
 
                 if (obs.x + obs.width < 0) {
                     obstacles.splice(i, 1);
                     score += 10;
                     document.getElementById("score").innerText = score;
-                    if (score % 50 === 0) gameSpeed += 0.3;
+                    if (score > highScore) {
+                        highScore = score;
+                        document.getElementById("highScore").innerText = highScore;
+                    }
+                    if (score % 50 === 0) gameSpeed += 0.35;
                 }
             }
 
             // Game Over Screen
             if (isGameOver) {
-                ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+                ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
                 ctx.fillStyle = "#222222";
-                ctx.font = "bold 20px Arial";
+                ctx.font = "bold 22px Arial";
                 ctx.textAlign = "center";
-                ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 8);
+                ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 10);
 
                 ctx.font = "13px Arial";
                 ctx.fillStyle = "#666666";
-                ctx.fillText("Tap to Restart", canvas.width / 2, canvas.height / 2 + 16);
+                ctx.fillText("Tap to Restart", canvas.width / 2, canvas.height / 2 + 18);
                 ctx.textAlign = "left";
             }
 
@@ -187,8 +196,8 @@
         }
 
         function spawnObstacle() {
-            const height = Math.floor(Math.random() * 18) + 18;
-            const width = 14;
+            const height = Math.floor(Math.random() * 18) + 20;
+            const width = 15;
             obstacles.push({
                 x: canvas.width,
                 y: groundY - height,
