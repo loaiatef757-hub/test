@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Dummy Website</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
+        }
+        .container {
+            text-align: center;
+        }
+        .youtube-btn {
+            background-color: #0066cc; /* Changed to blue */
+            color: white;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: background 0.3s ease;
+        }
+        .youtube-btn:hover {
+            background-color: #004999; /* Darker blue on hover */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Welcome to My Dummy Website</h1>
+        <p>Click the button below to visit YouTube:</p>
+        
+        <!-- The link styled as a blue button, opening YouTube in a new tab -->
+        <a href="https://www.youtube.com/" target="_blank" class="youtube-btn">Open YouTube</a>
+    </div>
+
+</body>
+</html>
