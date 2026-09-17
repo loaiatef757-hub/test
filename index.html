@@ -3,44 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Green Ball Runner</title>
+    <title>White Ball Runner</title>
     <style>
         body {
-            background-color: #0d1b1e;
-            color: #00ff66;
-            font-family: 'Courier New', Courier, monospace;
+            background-color: #ffffff;
+            color: #222222;
+            font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
             overflow: hidden;
-            /* Prevents phone screen bouncing/scrolling */
-            touch-action: none; 
+            touch-action: manipulation;
         }
         h1 {
-            margin-bottom: 5px;
+            margin: 5px 0;
             font-size: 20px;
-            text-shadow: 0 0 10px rgba(0, 255, 102, 0.4);
+            color: #111;
             text-align: center;
         }
         #score-board {
-            font-size: 18px;
-            margin-bottom: 10px;
+            font-size: 16px;
+            margin-bottom: 8px;
             font-weight: bold;
+            color: #444;
         }
         canvas {
-            border: 3px solid #00ff66;
-            background-color: #112a22;
-            box-shadow: 0 0 20px rgba(0, 255, 102, 0.2);
-            max-width: 100%;
+            border: 3px solid #222;
+            background-color: #f7f7f7;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 92vw;
+            max-width: 500px;
             height: auto;
+            display: block;
+            border-radius: 6px;
         }
         .instructions {
             margin-top: 10px;
-            font-size: 12px;
-            color: #79ac8e;
+            font-size: 13px;
+            color: #666;
             text-align: center;
             padding: 0 10px;
         }
@@ -48,10 +51,10 @@
 </head>
 <body>
 
-    <h1>GREEN BALL RUNNER</h1>
+    <h1>BALL RUNNER</h1>
     <div id="score-board">Score: <span id="score">0</span></div>
     
-    <canvas id="gameCanvas" width="800" height="300"></canvas>
+    <canvas id="gameCanvas" width="600" height="250"></canvas>
     
     <div class="instructions"><strong>Tap screen</strong> or press <strong>Spacebar</strong> to Jump</div>
 
@@ -59,28 +62,26 @@
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        // Game variables
         let score = 0;
-        let gameSpeed = 6;
+        let gameSpeed = 5;
         let isGameOver = false;
 
-        // Player (The Ball)
+        const groundY = 200;
+
         const ball = {
-            x: 80,
-            y: 220,
-            radius: 18,
+            x: 60,
+            y: groundY - 15,
+            radius: 15,
             dy: 0,
-            jumpStrength: -11,
-            gravity: 0.6,
+            jumpStrength: -10,
+            gravity: 0.55,
             grounded: true
         };
 
-        // Obstacles array
         let obstacles = [];
         let obstacleTimer = 0;
-        let nextObstacleTime = 100;
+        let nextObstacleTime = 130;
 
-        // Jump action handler (used for both keyboard and mobile tap)
         function triggerJump() {
             if (isGameOver) {
                 resetGame();
@@ -90,78 +91,72 @@
             }
         }
 
-        // Listen for keyboard controls (Desktop)
-        document.addEventListener("keydown", function(e) {
-            if ((e.code === "Space" || e.code === "ArrowUp")) {
+        window.addEventListener("keydown", function(e) {
+            if (e.code === "Space" || e.code === "ArrowUp") {
                 triggerJump();
-                e.preventDefault(); // Prevent page scrolling on spacebar
+                e.preventDefault();
             }
         });
 
-        // Listen for touch/click controls (Mobile & Tablet)
-        window.addEventListener("touchstart", function(e) {
+        canvas.addEventListener("touchstart", function(e) {
             triggerJump();
             e.preventDefault();
         }, { passive: false });
 
-        window.addEventListener("click", function(e) {
-            // Avoid double triggering if it was a touch event on some browsers
-            if (e.pointerType === "touch") return;
+        canvas.addEventListener("click", function(e) {
+            triggerJump();
         });
 
-        // Main Game Loop
         function update() {
             if (isGameOver) return;
 
-            // Clear canvas
-            ctx.fillStyle = "#112a22";
+            // Clear canvas with light background
+            ctx.fillStyle = "#f7f7f7";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw green ground line
-            ctx.strokeStyle = "#00ff66";
-            ctx.lineWidth = 4;
+            // Draw ground line
+            ctx.strokeStyle = "#333333";
+            ctx.lineWidth = 3;
             ctx.beginPath();
-            ctx.moveTo(0, 240);
-            ctx.lineTo(canvas.width, 240);
+            ctx.moveTo(0, groundY);
+            ctx.lineTo(canvas.width, groundY);
             ctx.stroke();
 
-            // Ball physics (gravity & jumping)
+            // Ball physics
             ball.dy += ball.gravity;
             ball.y += ball.dy;
 
-            // Ground collision
-            if (ball.y > 240 - ball.radius) {
-                ball.y = 240 - ball.radius;
+            if (ball.y > groundY - ball.radius) {
+                ball.y = groundY - ball.radius;
                 ball.dy = 0;
                 ball.grounded = true;
             }
 
-            // Draw the Ball
-            ctx.fillStyle = "#00ff66";
+            // Draw Ball (Dark grey/black design)
+            ctx.fillStyle = "#222222";
             ctx.beginPath();
             ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
             ctx.fill();
-            // Glowing core
+            
+            // Inner highlight dot on ball
             ctx.fillStyle = "#ffffff";
             ctx.beginPath();
-            ctx.arc(ball.x - 4, ball.y - 4, 4, 0, Math.PI * 2);
+            ctx.arc(ball.x - 3, ball.y - 3, 3, 0, Math.PI * 2);
             ctx.fill();
 
-            // Handle obstacle spawning
+            // Obstacles
             obstacleTimer++;
             if (obstacleTimer >= nextObstacleTime) {
                 spawnObstacle();
                 obstacleTimer = 0;
-                nextObstacleTime = Math.floor(Math.random() * 50) + 70;
+                nextObstacleTime = Math.floor(Math.random() * 50) + 100;
             }
 
-            // Move and draw obstacles
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 let obs = obstacles[i];
                 obs.x -= gameSpeed;
 
-                // Draw obstacle
-                ctx.fillStyle = "#33cc66";
+                ctx.fillStyle = "#e74c3c"; // Reddish obstacles for contrast
                 ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
 
                 // Collision detection
@@ -173,43 +168,39 @@
                     isGameOver = true;
                 }
 
-                // Remove off-screen obstacles and increase score
                 if (obs.x + obs.width < 0) {
                     obstacles.splice(i, 1);
                     score += 10;
                     document.getElementById("score").innerText = score;
-
-                    if (score % 50 === 0) {
-                        gameSpeed += 0.5;
-                    }
+                    if (score % 50 === 0) gameSpeed += 0.4;
                 }
             }
 
-            // Draw Game Over Screen
+            // Game Over overlay
             if (isGameOver) {
-                ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+                ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                ctx.fillStyle = "#00ff66";
-                ctx.font = "bold 26px 'Courier New'";
+                ctx.fillStyle = "#222222";
+                ctx.font = "bold 24px Arial";
                 ctx.textAlign = "center";
-                ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 15);
+                ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 10);
 
-                ctx.font = "14px 'Courier New'";
-                ctx.fillStyle = "#ffffff";
-                ctx.fillText("Tap or Press Space to Restart", canvas.width / 2, canvas.height / 2 + 20);
-                ctx.textAlign = "left"; 
+                ctx.font = "14px Arial";
+                ctx.fillStyle = "#666666";
+                ctx.fillText("Tap Anywhere to Restart", canvas.width / 2, canvas.height / 2 + 20);
+                ctx.textAlign = "left";
             }
 
             requestAnimationFrame(update);
         }
 
         function spawnObstacle() {
-            const height = Math.floor(Math.random() * 25) + 25;
-            const width = 20;
+            const height = Math.floor(Math.random() * 20) + 22;
+            const width = 16;
             obstacles.push({
                 x: canvas.width,
-                y: 240 - height,
+                y: groundY - height,
                 width: width,
                 height: height
             });
@@ -217,19 +208,18 @@
 
         function resetGame() {
             score = 0;
-            gameSpeed = 6;
+            gameSpeed = 5;
             obstacles = [];
             obstacleTimer = 0;
-            nextObstacleTime = 100;
+            nextObstacleTime = 130;
             document.getElementById("score").innerText = score;
-            ball.y = 220;
+            ball.y = groundY - ball.radius;
             ball.dy = 0;
             ball.grounded = true;
             isGameOver = false;
             update();
         }
 
-        // Start game loop
         update();
     </script>
 </body>
